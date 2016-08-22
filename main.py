@@ -53,6 +53,7 @@ class PixivSpider(object):
             return False
 
     def international_spider(self, opener):
+        # todo: open可能会报错
         url = "http://www.pixiv.net/ranking_area.php?type=detail&no=6"
         page = opener.open(url)
         content = page.read()
@@ -79,7 +80,7 @@ class PixivSpider(object):
                 print e,
                 print "  " + min_src + "  " + name + "  download fail"
 
-            break
+            # break
         pass
 
     def member_illust_spider(self, url):
@@ -141,7 +142,7 @@ class PixivSpider(object):
                 content = page.read()
             else:
                 break
-            if i == 100:
+            if i == 5:
                 break
         fp = open(name+".txt",'w')
         sorted_key = sorted(self.all_dist.keys(), reverse=True)
@@ -187,12 +188,12 @@ class PixivSpider(object):
         if not self.opener:
             return False
 
-        # self.international_spider(self.opener)
-        name = raw_input('what do you want to search?')
-        self.search(name)
+        self.international_spider(self.opener)
+        # name = raw_input('what do you want to search?')
+        # self.search(name)
         pass
 
 
 if __name__ == '__main__':
-    ps = PixivSpider('pivix_id', 'pixiv_password')
+    ps = PixivSpider('xxx', 'xxx')
     ps.start()

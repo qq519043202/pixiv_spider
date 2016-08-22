@@ -3,10 +3,11 @@ import urllib2
 
 
 class download(object):
-    def __init__(self, opener):
+    def __init__(self, opener, ddir="download/"):
         self.opener = opener
-        if not os.path.exists("download/"):
-            os.mkdir('download')
+        if not os.path.exists(ddir):
+            os.mkdir(ddir)
+        self.basedir = ddir
 
     def download(self, url, name):
         header = {
@@ -23,7 +24,7 @@ class download(object):
 
         jpg = page.read()
 
-        f = open('download/' + name + '.jpg', 'wb')
+        f = open(self.basedir + name + '.jpg', 'wb')
         f.write(jpg)
         f.close()
         print(name + " downloaded~")
