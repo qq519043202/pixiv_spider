@@ -92,3 +92,4 @@ ENV/
 download/
 *.html
 cookie.txt
+config.py

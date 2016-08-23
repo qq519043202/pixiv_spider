@@ -9,8 +9,7 @@ import requests
 from bs4 import BeautifulSoup
 from dl import download
 import re
-# import zipfile
-from os import system
+from config import *
 
 def write_down(data, filename='test.html'):
     fp = open(filename, 'w')
@@ -48,7 +47,7 @@ class PixivSpider(object):
             r = self.s.post(url, headers=header, data=login_data, timeout=10)
             # print (r.status_code)
         except Exception as e:
-            print (e)
+            print(e)
             exit()
 
     def get_originurl(self, url):
@@ -60,7 +59,7 @@ class PixivSpider(object):
         l1[-1] = l1[-1][:-15] + l1[-1][-4:]
         return '/'.join(l1)
 
-    def international_spider(self):
+    def international_spider(self,startat=0):
         url = "http://www.pixiv.net/ranking_area.php?type=detail&no=6"
         try:
             r = self.s.get(url)
@@ -68,13 +67,19 @@ class PixivSpider(object):
             main_soup = BeautifulSoup(content, 'lxml')
 
             all_div = main_soup.find_all("div", "ranking-item")
+            s = 0
             for div in all_div:
+                if s == startat:
+                    pass
+                else:
+                    s += 1
+                    continue
                 # rank = div.h1.a.string
                 # todo：存数据库？
                 data = div.find(class_="data")
                 author = data.find(class_="icon-text").string
                 name = data.a.string
-
+                # print(name)
                 work_wrapper = div.find(class_="work_wrapper")
                 min_src = work_wrapper.find("img", class_="_thumbnail")['data-src']
 
@@ -84,20 +89,20 @@ class PixivSpider(object):
                     self.member_illust_spider(self.base + url, 1)
                 elif 'ugoku-illust' in work_wrapper.a['class']:
                     # 动图
-                    pass
+                    self.member_illust_spider(self.base + url, 2)
                 else:
 
                     src = self.member_illust_spider(self.base + url)
-                    print (src)
+                    print(src)
                     try:
-                        self.dl.download(min_src, name + "_sm")
-                        self.dl.download(src, name)
+                        # self.dl.download(min_src, name + "_sm")
+                        self.dl.download(src, name.replace('/', ''))
                     except Exception as e:
-                        print (e)
-                        print ("  " + min_src + "  " + name + "  download fail")
+                        print(e)
+                        print("  " + min_src + "  " + name + "  download fail")
 
         except Exception as e:
-            print (e)
+            print(e)
             exit()
 
     def member_illust_spider(self, url, tag=0):
@@ -109,11 +114,11 @@ class PixivSpider(object):
                     soup = BeautifulSoup(r.text, 'lxml')
                     return soup.find('div', class_="ui-modal-close-box").img['data-src']
                 else:
-                    print (url)
+                    print(url)
                     print('重试ing')
                     self.member_illust_spider(url, 0)
             except Exception as e:
-                print (e)
+                print(e)
         elif tag == 1:
             # manga里获取页数。
             url = url.replace('medium', 'manga')
@@ -121,7 +126,7 @@ class PixivSpider(object):
             soup = BeautifulSoup(r.text, 'lxml')
             # write_down(r.text)
             page_num = soup.find('span', class_='total').string
-            print (page_num)
+            print(page_num)
             manga_url = url
             manga_big_url = url.replace('manga', 'manga_big')
             for i in range(int(page_num)):
@@ -132,34 +137,59 @@ class PixivSpider(object):
                     'Referer': manga_url
                 }
                 url = manga_big_url + '&page=' + str(i)
-
-                r = self.s.get(url, headers=header)
-                write_down(r.text)
+                try:
+                    r = self.s.get(url, headers=header)
+                except Exception as e:
+                    print(e)
+                    i -= 1
+                    continue
+                # write_down(r.text)
                 soup = BeautifulSoup(r.text, 'lxml')
                 img_url = soup.img['src']
                 dirname = soup.title.string.split('/')[0]
                 print(img_url)
-                self.dl.download_muli(img_url, url, dirname)
+                self.dl.download_muli(img_url, url, dirname, i)
 
                 # r = self.get_originurl()
         elif tag == 2:
             r = self.s.get(url)
-            write_down(r.text)
+            yuan_url = url
+            # write_down(r.text)
+
+            soup = BeautifulSoup(r.text, 'lxml')
+            name = soup.find('div', class_='ui-expander-target').find('h1').string
+            # title_pattern = re.compile('<h1 class="title">(.*?)</h1>')
+            # res = title_pattern.search(r.text).group()
+
             pattern = re.compile('FullscreenData.*?:"(.*?)\.zip')
             res = pattern.search(r.text).groups()
             url = res[0] + '.zip'
             url = url.replace('\\', '')
-            print (url)
-            r = self.s.get(url)
-            with open('content.zip','wb') as f:
-                f.write(r.content)
-            self.dl.unzip()
-
-            # 'http:\\/\\/i1.pixiv.net\\/img-zip-ugoira\\/img\\/2016\\/08\\/16\\/00\\/01\\/05\\/58466372_ugoira1920x1080.zip'
+            print(url)
+            try:
+                r = self.s.get(url, timeout=5)
+                if r.status_code == 200:
+                    # with open('content.zip', 'wb') as f:
+                    #     f.write(r.content)
+                    self.dl.unzip(r, name)
+                else:
+                    print('retry')
+                    self.member_illust_spider(yuan_url, 2)
+            except Exception as e:
+                print(e)
+                print('retry')
+                self.member_illust_spider(yuan_url, 2)
+                # 'http:\\/\\/i1.pixiv.net\\/img-zip-ugoira\\/img\\/2016\\/08\\/16\\/00\\/01\\/05\\/58466372_ugoira1920x1080.zip'
 
 
 if __name__ == '__main__':
-    ps = PixivSpider('xxx', 'xxx')
-    ps.international_spider()
+    ps = PixivSpider(pid, pwd)
+    try:
+        ps.international_spider()
+    except Exception as e:
+        print(e)
+        print('不能淡定')
+    # 多图示例
     # ps.member_illust_spider('http://www.pixiv.net/member_illust.php?mode=medium&illust_id=58485741',1)
+    # 动图示例
     # ps.member_illust_spider('http://www.pixiv.net/member_illust.php?mode=medium&illust_id=58466372', 2)

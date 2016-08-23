@@ -19,7 +19,15 @@
 - 还有一个问题。偶尔会卡死。设置一波timeout？
 - 多加一些header信息可能也会好一些。。
 - 今天2点多做到现在8点半。要死了。。。
+- zip的用BytesIO在内存中解压了。
+- 越写越烂。还是会少一些图片。。坐等哪天高兴了再重写吧。。
+- 多线程，异步能快一些么。。
 
+### 使用方法都懒的写了233
+- config-demo.py 输入账号密码
+- 然后改成config.py即可
+- python3 repixiv 运行
+- 概不负责。。orz
 
 ## 特别感谢
 - 后排膜[monburan大神](https://github.com/monburan)
